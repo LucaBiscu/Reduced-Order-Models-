@@ -10,7 +10,7 @@ gedim.Initialize({"GeometricTolerance": 1.0e-8}, lib)
 
 # setup problem
 mu = np.array([0.34, 0.45])
-mesh_size = 1e-2
+mesh_size = 5e-3
 order = 1
 domain = {
     "SquareEdge": 1.0,
@@ -28,17 +28,17 @@ problem_data, dofs, strongs = gedim.Discretize(discreteSpace, lib)
 # Solve FOM
 u, u_strong, relative_error, k = newton_solver(lib, problem_data, forcing_term, mu)
 
-print(f"Iterations: {k} Relative err: {relative_error}")
-gedim.PlotSolution(mesh, dofs, strongs, u, u_strong)
+print(f"FOM Converged in {k} iterations")
 
 # Extract Base
 train_set = np.random.uniform(0.1, 1, size=(100, 2))
 basis = pod_base(lib, problem_data, train_set)
-print(f"found basis of dimensions {basis.shape}")
 
-u_pod, u_pod_strong, _, _ = newton_solver_pod(
-    lib, problem_data, forcing_term, basis, mu
+u_pod, u_pod_strong, relative_error, k = newton_solver_pod(
+    lib, problem_data, forcing_term, basis, mu, max_iterations=20
 )
+print(f"POD Converged in {k} iterations")
+gedim.PlotSolution(mesh, dofs, strongs, u_pod, u_pod_strong)
 
 error = u - u_pod
 inner_product, _ = gedim.AssembleStiffnessMatrix(ones, problem_data, lib)

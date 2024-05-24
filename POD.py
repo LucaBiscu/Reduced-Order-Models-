@@ -55,7 +55,7 @@ def newton_solver_pod(
 
         du = gedim.LUSolver(
             stiff_m + basis.T @ react_m @ basis,
-            forc_m - basis.T @ (nl_forc_m - nl_forc_d_m),
+            forc_m - basis.T @ (nl_forc_m + nl_forc_d_m),
             lib,
         )
         u_kn = u_kn + du
