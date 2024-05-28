@@ -1,5 +1,6 @@
 import GeDiM4Py as gedim
 import numpy as np
+import time
 from weakforms import test_forcing_term, forcing_term, ones
 from FOM import newton_solver
 from POD import pod_base, newton_solver_pod
@@ -9,8 +10,7 @@ lib = gedim.ImportLibrary("/content/CppToPython/release/GeDiM4Py.so")
 gedim.Initialize({"GeometricTolerance": 1.0e-8}, lib)
 
 # setup problem
-mu = np.array([0.34, 0.45])
-mesh_size = 5e-3
+mesh_size = 1e-3
 order = 1
 domain = {
     "SquareEdge": 1.0,
@@ -23,25 +23,41 @@ _, mesh = gedim.CreateDomainSquare(domain, lib)
 
 discreteSpace = {"Order": order, "Type": 1, "BoundaryConditionsType": [1, 2]}
 problem_data, dofs, strongs = gedim.Discretize(discreteSpace, lib)
-
-
-# Solve FOM
-u, u_strong, relative_error, k = newton_solver(lib, problem_data, forcing_term, mu)
-
-print(f"FOM Converged in {k} iterations")
+n_dofs = dofs.shape[1]
 
 # Extract Base
-train_set = np.random.uniform(0.1, 1, size=(100, 2))
+n_train, n_test = 10, 100
+train_set = np.random.uniform(0.1, 1, size=(n_train, 2))
+test_set = np.random.uniform(0.1, 1, size=(n_test, 2))
+
+print(f"Computing pod basis...")
+basis_time = time.process_time()
 basis = pod_base(lib, problem_data, train_set)
+basis_time = time.process_time() - basis_time
+print(f"Computed basis in {basis_time:.2}s")
 
-u_pod, u_pod_strong, relative_error, k = newton_solver_pod(
-    lib, problem_data, forcing_term, basis, mu, max_iterations=20
-)
-print(f"POD Converged in {k} iterations")
-gedim.PlotSolution(mesh, dofs, strongs, u_pod, u_pod_strong)
+fom_solutions, pod_solutions = (np.zeros((n_test, n_dofs)) for _ in (0, 1))
+fom_times, pod_times = (np.zeros((n_test)) for _ in (0, 1))
 
-error = u - u_pod
+print(f"Evaluating FOM & POD on test set...")
+for i, mu in enumerate(test_set):
+    fom_times[i] = time.process_time()
+    fom_solutions[i] = newton_solver(lib, problem_data, forcing_term, mu)[0]
+    fom_times[i] = time.process_time() - fom_times[i]
+    pod_times[i] = time.process_time()
+    pod_solutions[i] = newton_solver_pod(lib, problem_data, forcing_term, basis, mu)[0]
+    pod_times[i] = time.process_time() - pod_times[i]
+
+
+error = fom_solutions - pod_solutions
 inner_product, _ = gedim.AssembleStiffnessMatrix(ones, problem_data, lib)
-error_norm = np.sqrt(np.abs(error.T @ inner_product @ error))
-fom_norm = np.sqrt(np.abs(u.T @ inner_product @ u))
-print(f"POD Relative Error {error_norm / fom_norm}")
+error_norm = np.sqrt(np.abs(np.diag(error @ inner_product @ error.T)))
+fom_norm = np.sqrt(np.abs(np.diag(fom_solutions @ inner_product @ fom_solutions.T)))
+relative_error = error_norm / fom_norm
+speed_up = fom_times / pod_times
+
+print(f"Speed up {np.mean(speed_up):.2} ± {np.std(speed_up):.2}")
+print(
+    f"""POD Relative Error {np.mean(relative_error):.2E} ± {
+        np.std(relative_error):.2E}"""
+)
