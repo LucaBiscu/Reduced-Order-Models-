@@ -29,9 +29,33 @@ def test_forcing_term(numPoints, points, mu=None):
     matPoints = gedim.make_nd_matrix(points, (3, numPoints), np.double)
     linear = -32 * (matPoints[0, :] ** 2 + matPoints[1, :]
                     ** 2 - matPoints[0, :] - matPoints[1, :])
-    nonlinear = mu[0] / mu[1] * np.exp(16 * matPoints[0, :] * matPoints[1, :] * (
-        1 - matPoints[0, :]) * (1 - matPoints[1, :]))
+    nonlinear = mu[0] / mu[1] * (np.exp(16. * mu[1] * matPoints[0, :] * matPoints[1, :] * (
+        1 - matPoints[0, :]) * (1 - matPoints[1, :])) - 1.)
     return (linear + nonlinear).ctypes.data
+
+
+def test_exact_solution(numPoints, points):
+    matPoints = gedim.make_nd_matrix(points, (3, numPoints), np.double)
+    values_ex = 16.0 * (matPoints[1, :] * (1.0 - matPoints[1, :])
+                        * matPoints[0, :] * (1.0 - matPoints[0, :]))
+    return values_ex.ctypes.data
+
+
+def test_exact_solution_derivative(direction, numPoints, points):
+    matPoints = gedim.make_nd_matrix(points, (3, numPoints), np.double)
+
+    if direction == 0:
+        values_ex_d = 16.0 * \
+            (1.0 - 2.0 * matPoints[0, :]) * \
+            matPoints[1, :] * (1.0 - matPoints[1, :])
+    elif direction == 1:
+        values_ex_d = 16.0 * \
+            (1.0 - 2.0 * matPoints[1, :]) * \
+            matPoints[0, :] * (1.0 - matPoints[0, :])
+    else:
+        values_ex_d = np.zeros(numPoints, order='F')
+
+    return values_ex_d.ctypes.data
 
 
 def forcing_term(numPoints, points, mu=None):
@@ -62,6 +86,10 @@ def newton_nonlinear_forcing_derivative(numPoints, points, u, u_x, u_y, mu=None)
 
 def zeros(numPoints, points, mu=None):
     return np.zeros(numPoints, order='F').ctypes.data
+
+
+def zeros_derivative(numPoints, points, mu=None):
+    return np.zeros((2, numPoints), order='F').ctypes.data
 
 
 def ones(numPoints, points, mu=None):
