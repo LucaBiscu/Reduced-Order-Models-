@@ -4,7 +4,7 @@ import torch.nn as nn
 
 class MLPiNN(nn.Module):
     def __init__(
-        self, in_dim, out_dim, param_dim, hidden_size, hidden_layers, activation=nn.ReLU
+        self, in_dim, out_dim, param_dim, hidden_size, hidden_layers, activation=nn.Tanh
     ):
         super(MLPiNN, self).__init__()
         assert hidden_layers > 0, "Number of hidden layers must be positive"
@@ -30,13 +30,10 @@ class MLPiNN(nn.Module):
         assert torch.all(mu[:, 1] != 0), "mu 1 must not be zero"
         u = self(x, mu).squeeze()
         div = torch.autograd.grad(u.sum(), x, create_graph=True)[0]
-        dif = torch.autograd.grad(div.sum(), x, create_graph=True)[
-            0].sum(axis=1)
+        dif = torch.autograd.grad(div.sum(), x, create_graph=True)[0]
         x = x.detach()
-        g = 100 * torch.sin(2 * torch.pi *
-                            x[:, 0]) * torch.cos(2 * torch.pi * x[:, 1])
-        r = -dif + (mu[:, 0] / mu[:, 1]) * (torch.exp(mu[:, 1] * u) - 1) - g
-        print(-dif, (mu[:, 0] / mu[:, 1]) * (torch.exp(mu[:, 1] * u) - 1), g)
+        g = 100 * torch.sin(2 * torch.pi * x[:, 0]) * torch.cos(2 * torch.pi * x[:, 1])
+        r = -dif.sum(axis=1) + (mu[:, 0] / mu[:, 1]) * (torch.exp(mu[:, 1] * u) - 1) - g
         return self.loss(r, torch.zeros_like(r))
 
 
@@ -61,7 +58,9 @@ def train(network, steps, step_samples, x_boundary, mu_boundary, log=False):
         loss_r = network.residual_loss(x_inner, mus)
         loss = 0.5 * loss_b + 0.5 * loss_r
         if log:
-            print(f"""Step {s}, loss {loss.item():.2}, loss_b {
-                  loss_b.item():.2}, loss_r {loss_r.item():.2}""")
+            print(
+                f"""Step {s}, loss {loss.item():.2}, loss_b {
+                    loss_b.item():.2}, loss_r {loss_r.item():.2}"""
+            )
         loss.backward()
         optim.step()
