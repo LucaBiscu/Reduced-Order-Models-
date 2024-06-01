@@ -7,7 +7,7 @@ from FOM import newton_solver
 lib = gedim.ImportLibrary("/content/CppToPython/release/GeDiM4Py.so")
 gedim.Initialize({"GeometricTolerance": 1.0e-8}, lib)
 
-for mesh_size in (1e-2, 1e-3, 1e-4):
+for mesh_size in (1e-2, 1e-3):
     # setup problem
     order = 1
     domain = {

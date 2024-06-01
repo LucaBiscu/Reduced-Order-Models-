@@ -25,14 +25,15 @@ discreteSpace = {"Order": order, "Type": 1, "BoundaryConditionsType": [1, 2]}
 problem_data, dofs, strongs = gedim.Discretize(discreteSpace, lib)
 n_dofs = dofs.shape[1]
 
-# Extract Base
+# snapshots
 n_train, n_test = 10, 100
 train_set = np.random.uniform(0.1, 1, size=(n_train, 2))
 test_set = np.random.uniform(0.1, 1, size=(n_test, 2))
 
+#extract basis
 print(f"Computing pod basis...")
 basis_time = time.process_time()
-basis = pod_base(lib, problem_data, train_set)
+basis, _, _ = pod_base(lib, problem_data, train_set)
 basis_time = time.process_time() - basis_time
 print(f"Computed basis in {basis_time:.2}s")
 
@@ -45,7 +46,7 @@ for i, mu in enumerate(test_set):
     fom_solutions[i] = newton_solver(lib, problem_data, forcing_term, mu)[0]
     fom_times[i] = time.process_time() - fom_times[i]
     pod_times[i] = time.process_time()
-    pod_solutions[i] = newton_solver_pod(lib, problem_data, forcing_term, basis, mu)[0]
+    pod_solutions[i] = newton_solver_pod(lib, problem_data, basis, mu)[0]
     pod_times[i] = time.process_time() - pod_times[i]
 
 

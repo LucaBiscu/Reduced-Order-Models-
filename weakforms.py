@@ -4,7 +4,7 @@ import GeDiM4Py as gedim
 
 def __assert_mu(mu):
     assert mu is not None, "mu must not be none"
-    assert isinstance(mu, np.ndarray), "mu must be an numpy ndarray"
+    assert isinstance(mu, np.ndarray), "mu must be a numpy ndarray"
     assert len(mu) == 2, "mu must have 2 arguments"
 
 

@@ -64,3 +64,12 @@ def train(network, steps, step_samples, x_boundary, mu_boundary, log=False):
             )
         loss.backward()
         optim.step()
+
+
+
+# neural network initialization
+x_train = torch.tensor(np.float32(training_set))
+net = MLPiNN(1, 1, 2, 10, 4)
+
+# training the network
+train(net, 100, 100, [0, 1], [0, 1], log=True)
