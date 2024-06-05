@@ -31,20 +31,21 @@ def residual_loss(net, x, mu):
     x.requires_grad = True
     inp = torch.cat((x, mu), dim=1)
     u = net(inp).squeeze()
-    div = torch.autograd.grad(u.sum(), x, create_graph=True)[0]
-    dif = torch.autograd.grad(div.sum(), x, create_graph=True)[0]
+    grad = torch.autograd.grad(u, x, torch.ones_like(u), create_graph=True, retain_graph=True)[0]
+    laplacian = torch.autograd.grad(grad[:, 0], x, torch.ones_like(grad[:, 0]), create_graph=True, retain_graph=True)[0][:, 0]
+    laplacian += torch.autograd.grad(grad[:, 1], x, torch.ones_like(grad[:, 1]), create_graph=True, retain_graph=True)[0][:, 1]
     x = x.detach()
     g = 100 * torch.sin(2 * torch.pi * x[:, 0]) * torch.cos(2 * torch.pi * x[:, 1])
-    r = -dif.sum(axis=1) + (mu[:, 0] / mu[:, 1]) * (torch.exp(mu[:, 1] * u) - 1) - g
-    return (r**2).mean()
+    r = -laplacian + (mu[:, 0] / mu[:, 1]) * (torch.exp(mu[:, 1] * u) - 1) - g
+    return (r ** 2).mean()
 
 
 def train_pinn(network, steps, samples, x_boundary, mu_boundary, log=0):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     network = network.to(device)
-    optim = torch.optim.Adam(network.parameters(), lr=1e-2)
+    optim = torch.optim.AdamW(network.parameters(), lr=1e-3)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(
-        optim, 500, gamma=0.75
+        optim, 1000, gamma=0.75
     )
     ls = torch.linspace(x_boundary[0], x_boundary[1], samples)
     # grid on the domain
