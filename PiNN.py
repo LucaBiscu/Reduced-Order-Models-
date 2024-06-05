@@ -43,9 +43,9 @@ def residual_loss(net, x, mu):
 def train_pinn(network, steps, samples, x_boundary, mu_boundary, log=0):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     network = network.to(device)
-    optim = torch.optim.AdamW(network.parameters(), lr=1e-3)
+    optim = torch.optim.AdamW(network.parameters(), lr=1e-3, weight_decay=5e-2)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(
-        optim, 1000, gamma=0.75
+        optim, 1000, gamma=0.95
     )
     ls = torch.linspace(x_boundary[0], x_boundary[1], samples)
     # grid on the domain

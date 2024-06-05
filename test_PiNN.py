@@ -32,17 +32,17 @@ n_test = 100
 test_set = np.random.uniform(0.1, 1, size=(n_test, 2))
 
 # Train NN
-train_steps = 4000
-grid_side = 100 
+train_steps = 10000
+grid_side = 50 
 print(f"Training netowrk for {train_steps} train steps on a {grid_side ** 2} points grid...")
-network = MLPiNN(4, 1, 100, 5, activation=nn.Mish)
+network = MLPiNN(4, 1, 100, 5)
 network = train_pinn(
     network,
     train_steps,
     grid_side,
     torch.tensor([0.0, 1.0]),
     torch.tensor([0.1, 1.0]),
-    log=100,
+    log=1000,
 ).to('cpu')
 print("Finished training!")
 
@@ -68,6 +68,8 @@ error_norm = np.sqrt(np.abs(np.diag(error @ inner_product @ error.T)))
 fom_norm = np.sqrt(np.abs(np.diag(fom_solutions @ inner_product @ fom_solutions.T)))
 relative_error = error_norm / fom_norm
 speed_up = fom_times / pinn_times
+
+gedim.PlotSolution(mesh, dofs, strongs, pinn_solutions[-1], np.zeros(problem_data['NumberStrongs']))
 
 print(f"Speed up {np.mean(speed_up):.2} ± {np.std(speed_up):.2}")
 print(
