@@ -40,15 +40,17 @@ def residual_loss(net, x, mu):
 
 
 def train_pinn(network, steps, samples, x_boundary, mu_boundary, log=0):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    network = network.to(device)
     optim = torch.optim.Adam(network.parameters(), lr=1e-2)
-    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
-        optim, milestones=[2000, 3000], gamma=0.5
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(
+        optim, 500, gamma=0.75
     )
     ls = torch.linspace(x_boundary[0], x_boundary[1], samples)
     # grid on the domain
     x_inner = torch.stack(
         tuple(map(torch.flatten, torch.meshgrid(ls[1:-1], ls[1:-1])))
-    ).T
+    ).to(device).T
     # points on the boundary
     x_bound = torch.cat(
         tuple(
@@ -61,9 +63,9 @@ def train_pinn(network, steps, samples, x_boundary, mu_boundary, log=0):
             ]
         ),
         dim=1,
-    ).T
-    mu_inner = torch.FloatTensor(x_inner.shape[0], 2)
-    mu_bound = torch.FloatTensor(x_bound.shape[0], 2)
+    ).to(device).T
+    mu_inner = torch.FloatTensor(x_inner.shape[0], 2).to(device)
+    mu_bound = torch.FloatTensor(x_bound.shape[0], 2).to(device)
     for s in range(steps):
         mu_inner.uniform_(mu_boundary[0], mu_boundary[1])
         mu_bound.uniform_(mu_boundary[0], mu_boundary[1])
@@ -79,3 +81,4 @@ def train_pinn(network, steps, samples, x_boundary, mu_boundary, log=0):
                 f"""Step {s}, lr {optim.param_groups[0]['lr']} loss {(loss_b.item() + loss_r.item()) / 2:.2}, loss_b {
                     loss_b.item():.2}, loss_r {loss_r.item():.2}"""
             )
+    return network
