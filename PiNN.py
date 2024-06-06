@@ -3,9 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class MLPiNN(nn.Module):
+class MLP(nn.Module):
     def __init__(self, in_dim, out_dim, hidden_size, hidden_layers, activation=nn.Tanh):
-        super(MLPiNN, self).__init__()
+        super(MLP, self).__init__()
         assert hidden_layers > 0, "Number of hidden layers must be positive"
         assert hidden_size > 0, "Dimension of hidden layer must be non zero"
         layers = [nn.Linear(in_dim, hidden_size), activation()]

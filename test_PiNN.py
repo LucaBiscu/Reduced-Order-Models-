@@ -35,7 +35,7 @@ test_set = np.random.uniform(0.1, 1, size=(n_test, 2))
 train_steps = 10000
 grid_side = 50 
 print(f"Training netowrk for {train_steps} train steps on a {grid_side ** 2} points grid...")
-network = MLPiNN(4, 1, 100, 5)
+network = MLP(4, 1, 100, 5)
 network = train_pinn(
     network,
     train_steps,
