@@ -5,10 +5,12 @@ from weakforms import *
 from FOM import newton_solver
 
 
-def pod_base(lib, problem_data, mus, retained_energy=0.99, max_n=20):
-    inner_product, _ = gedim.AssembleStiffnessMatrix(ones, problem_data, lib)
+def create_snapshots(lib, problem_data, mus, forcing_term):
     fom_solver = partial(newton_solver, lib, problem_data, forcing_term)
-    snapshots = np.stack([fom_solver(mu)[0] for mu in mus])
+    return np.stack([fom_solver(mu)[0] for mu in mus])
+
+
+def pod_base(snapshots, inner_product, retained_energy=0.99, max_n=20):
     e_vals, e_vecs = np.linalg.eig(snapshots @ inner_product @ snapshots.T)
     assert np.all(
         np.isclose(e_vals.imag, 0)
@@ -17,8 +19,7 @@ def pod_base(lib, problem_data, mus, retained_energy=0.99, max_n=20):
     N = min(np.argmax((cs / cs[-1]) > retained_energy) + 1, max_n)
     basis = snapshots.T @ e_vecs.real[:, :N]
     norm = np.sqrt(np.diag(basis.T @ inner_product @ basis))
-    return basis / norm, inner_product, snapshots
-
+    return basis / norm
 
 def newton_solver_pod(
     lib, problem_data, basis, mu, max_iterations=10, tol=1e-6

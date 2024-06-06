@@ -1,9 +1,9 @@
 import GeDiM4Py as gedim
 import numpy as np
 import time
-from weakforms import test_forcing_term, forcing_term, ones
+from weakforms import forcing_term, ones
 from FOM import newton_solver
-from POD import pod_base, newton_solver_pod
+from POD import create_snapshots, pod_base, newton_solver_pod
 
 # setup lib
 lib = gedim.ImportLibrary("/content/CppToPython/release/GeDiM4Py.so")
@@ -31,9 +31,11 @@ train_set = np.random.uniform(0.1, 1, size=(n_train, 2))
 test_set = np.random.uniform(0.1, 1, size=(n_test, 2))
 
 #extract basis
+inner_product, _ = gedim.AssembleStiffnessMatrix(ones, problem_data, lib)
+snapshots = create_snapshots(lib, problem_data, train_set, forcing_term)
 print(f"Computing pod basis...")
 basis_time = time.process_time()
-basis, _, _ = pod_base(lib, problem_data, train_set)
+basis = pod_base(snapshots, inner_product)
 basis_time = time.process_time() - basis_time
 print(f"Computed basis in {basis_time:.2}s")
 
