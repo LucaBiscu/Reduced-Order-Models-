@@ -24,11 +24,6 @@ for mesh_size in (1e-2, 1e-3):
     problem_data, dofs, strongs = gedim.Discretize(discreteSpace, lib)
     n_dofs = dofs.shape[1]
 
-    # Extract Base
-    n_train, n_test = 10, 100
-    train_set = np.random.uniform(0.1, 1, size=(n_train, 2))
-    test_set = np.random.uniform(0.1, 1, size=(n_test, 2))
-
     u, u_strong, _, k = newton_solver(
         lib, problem_data, test_forcing_term, np.array([.5, .6]), tol=1e-6)
     fom_error_l2 = gedim.ComputeErrorL2(test_exact_solution, u, u_strong, lib)
