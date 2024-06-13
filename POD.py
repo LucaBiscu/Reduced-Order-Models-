@@ -10,7 +10,9 @@ def create_snapshots(lib, problem_data, mus, forcing_term):
     return np.stack([fom_solver(mu)[0] for mu in mus])
 
 
-def pod_base(snapshots, inner_product, retained_energy=0.99, max_n=20):
+def pod_base(
+    snapshots, inner_product, retained_energy=0.99, max_n=20, return_energy=False
+):
     e_vals, e_vecs = np.linalg.eig(snapshots @ inner_product @ snapshots.T)
     assert np.all(
         np.isclose(e_vals.imag, 0)
@@ -19,11 +21,13 @@ def pod_base(snapshots, inner_product, retained_energy=0.99, max_n=20):
     N = min(np.argmax((cs / cs[-1]) > retained_energy) + 1, max_n)
     basis = snapshots.T @ e_vecs.real[:, :N]
     norm = np.sqrt(np.diag(basis.T @ inner_product @ basis))
-    return basis / norm
+    if return_energy:
+        return basis / norm, cs
+    else:
+        return basis / norm
 
-def newton_solver_pod(
-    lib, problem_data, basis, mu, max_iterations=10, tol=1e-6
-):
+
+def newton_solver_pod(lib, problem_data, basis, mu, max_iterations=10, tol=1e-6):
     diff_c = partial(newton_diffusion_coefficient, mu=mu)
     reac_c = partial(newton_reaction_coefficient, mu=mu)
     nl_reac_t = partial(newton_nonlinear_reaction_term, mu=mu)
@@ -53,7 +57,7 @@ def newton_solver_pod(
         nl_forc_d_m = gedim.AssembleNonLinearDerivativeForcingTerm(
             ones_derivative, nl_forc_d, u_k, u_strong, problem_data, lib
         )
-        
+
         du = gedim.LUSolver(
             stiff_m + basis.T @ react_m @ basis,
             forc_m - basis.T @ (nl_forc_m + nl_forc_d_m),
